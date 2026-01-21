@@ -164,28 +164,45 @@ def teacher_login():
         email = request.form.get("email")
         password = request.form.get("password")
 
-        conn = get_db_connection()
-        cursor = conn.cursor(dictionary=True)
-        cursor.execute(
-            "SELECT * FROM teachers WHERE email=%s AND password=%s",
-            (email, password)
-        )
-        data = cursor.fetchone()
-        conn.close()
+        # ✅ Safety check (IMPORTANT)
+        if not email or not password:
+            flash("Email and Password required")
+            return redirect(url_for("teacher_login"))
+
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor(dictionary=True)
+
+            cursor.execute(
+                "SELECT * FROM teachers WHERE email=%s AND password=%s",
+                (email, password)
+            )
+            data = cursor.fetchone()
+
+        except Exception as e:
+            print("Teacher login DB error:", e)
+            flash("Server error. Try again later.")
+            return redirect(url_for("teacher_login"))
+
+        finally:
+            if conn:
+                conn.close()
 
         if data:
             user = User(
-                f"TEACHER:{data['id']}",
-                "TEACHER",
-                data["name"],
-                data["id"]
+                id=f"TEACHER:{data['id']}",
+                role="TEACHER",
+                name=data["name"],
+                original_id=data["id"]
             )
             login_user(user)
             return redirect(url_for("teacher_dashboard"))
 
-        flash("Invalid teacher credentials")
+        flash("Invalid Teacher Credentials")
+        return redirect(url_for("teacher_login"))
 
     return render_template("teacher/login.html")
+
 
 @app.route("/teacher/dashboard")
 @teacher_required
