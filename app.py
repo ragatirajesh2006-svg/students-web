@@ -251,28 +251,45 @@ def student_login():
         student_id = request.form.get("student_id")
         dob = request.form.get("dob")
 
-        conn = get_db_connection()
-        cursor = conn.cursor(dictionary=True)
-        cursor.execute(
-            "SELECT * FROM students WHERE student_id=%s AND dob=%s",
-            (student_id, dob)
-        )
-        data = cursor.fetchone()
-        conn.close()
+        # ✅ Empty check (VERY IMPORTANT)
+        if not student_id or not dob:
+            flash("Student ID and DOB required")
+            return redirect(url_for("student_login"))
+
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor(dictionary=True)
+
+            cursor.execute(
+                "SELECT * FROM students WHERE student_id=%s AND dob=%s",
+                (student_id, dob)
+            )
+            data = cursor.fetchone()
+
+        except Exception as e:
+            print("Student login DB error:", e)
+            flash("Server error. Please try again later.")
+            return redirect(url_for("student_login"))
+
+        finally:
+            if conn:
+                conn.close()
 
         if data:
             user = User(
-                f"STUDENT:{data['id']}",
-                "STUDENT",
-                data["name"],
-                data["id"]
+                id=f"STUDENT:{data['id']}",
+                role="STUDENT",
+                name=data["name"],
+                original_id=data["id"]
             )
             login_user(user)
             return redirect(url_for("student_dashboard"))
 
-        flash("Invalid student credentials")
+        flash("Invalid Student ID or Date of Birth")
+        return redirect(url_for("student_login"))
 
     return render_template("student/login.html")
+
 
 @app.route("/student/dashboard")
 @student_required
