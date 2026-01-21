@@ -6,8 +6,6 @@ import os
 
 # ---------------- APP SETUP ----------------
 app = Flask(__name__)
-
-# SECRET KEY (ENV)
 app.secret_key = os.getenv("SECRET_KEY", "dev-secret-key")
 
 # ---------------- DATABASE CONFIG ----------------
@@ -64,7 +62,6 @@ def load_user(user_id):
 
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
-    user = None
 
     tables = {
         "SUPER_ADMIN": ("users", "username"),
@@ -73,17 +70,13 @@ def load_user(user_id):
         "TEACHER": ("teachers", "name")
     }
 
+    user = None
     if role in tables:
         table, name_col = tables[role]
         cursor.execute(f"SELECT * FROM {table} WHERE id=%s", (db_id,))
         data = cursor.fetchone()
         if data:
-            user = User(
-                id=user_id,
-                role=role,
-                name=data[name_col],
-                original_id=db_id
-            )
+            user = User(user_id, role, data[name_col], db_id)
 
     conn.close()
     return user
@@ -101,12 +94,12 @@ def role_required(check):
         return decorated
     return wrapper
 
-admin_required = role_required(lambda: current_user.is_admin)
+admin_required   = role_required(lambda: current_user.is_admin)
 college_required = role_required(lambda: current_user.is_college)
 teacher_required = role_required(lambda: current_user.is_teacher)
 student_required = role_required(lambda: current_user.is_student)
 
-# ---------------- ROUTES ----------------
+# ---------------- HOME ----------------
 @app.route("/")
 def home():
     if current_user.is_authenticated:
@@ -125,6 +118,41 @@ def home():
 def logout():
     logout_user()
     return redirect(url_for("home"))
+
+# ================= COLLEGE LOGIN (🔥 FIX) =================
+@app.route("/college/login", methods=["GET", "POST"], endpoint="college_login")
+def college_login():
+    if request.method == "POST":
+        email = request.form["email"]
+        password = request.form["password"]
+
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute(
+            "SELECT * FROM colleges WHERE email=%s AND password=%s",
+            (email, password)
+        )
+        data = cursor.fetchone()
+        conn.close()
+
+        if data:
+            user = User(
+                f"COLLEGE_ADMIN:{data['id']}",
+                "COLLEGE_ADMIN",
+                data["college_name"],
+                data["id"]
+            )
+            login_user(user)
+            return redirect(url_for("college_dashboard"))
+
+        flash("Invalid College Credentials")
+
+    return render_template("college/login.html")
+
+@app.route("/college/dashboard")
+@college_required
+def college_dashboard():
+    return render_template("college/dashboard.html")
 
 # ---------------- TEACHER ----------------
 @app.route("/teacher/login", methods=["GET", "POST"])
@@ -154,22 +182,7 @@ def teacher_login():
 @app.route("/teacher/dashboard")
 @teacher_required
 def teacher_dashboard():
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
-
-    cursor.execute("""
-        SELECT ar.*, s.name AS student_name, s.student_id AS roll
-        FROM attendance_requests ar
-        JOIN students s ON ar.student_id = s.id
-        WHERE s.college_id = (
-            SELECT college_id FROM teachers WHERE id=%s
-        )
-        ORDER BY ar.date DESC, ar.time DESC
-    """, (current_user.original_id,))
-
-    requests = cursor.fetchall()
-    conn.close()
-    return render_template("teacher/dashboard.html", requests=requests)
+    return render_template("teacher/dashboard.html")
 
 # ---------------- ADMIN ----------------
 @app.route("/admin/login", methods=["GET", "POST"])
@@ -188,7 +201,12 @@ def admin_login():
         conn.close()
 
         if data:
-            user = User(f"SUPER_ADMIN:{data['id']}", "SUPER_ADMIN", data["username"], data["id"])
+            user = User(
+                f"SUPER_ADMIN:{data['id']}",
+                "SUPER_ADMIN",
+                data["username"],
+                data["id"]
+            )
             login_user(user)
             return redirect(url_for("admin_dashboard"))
 
@@ -199,12 +217,7 @@ def admin_login():
 @app.route("/admin/dashboard")
 @admin_required
 def admin_dashboard():
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
-    cursor.execute("SELECT * FROM colleges")
-    colleges = cursor.fetchall()
-    conn.close()
-    return render_template("admin/dashboard.html", colleges=colleges)
+    return render_template("admin/dashboard.html")
 
 # ---------------- STUDENT ----------------
 @app.route("/student/login", methods=["GET", "POST"])
@@ -235,5 +248,3 @@ def student_login():
 @student_required
 def student_dashboard():
     return render_template("student/dashboard.html")
-
-# ❌ app.run() REMOVED (Gunicorn handles it)
