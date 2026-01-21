@@ -1,6 +1,10 @@
 from flask import Flask, render_template, request, redirect, url_for, flash
 import mysql.connector
-from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
+from flask_login import (
+    LoginManager, UserMixin,
+    login_user, login_required,
+    logout_user, current_user
+)
 from functools import wraps
 import os
 
@@ -27,14 +31,11 @@ login_manager.login_view = "home"
 
 # ---------------- USER MODEL ----------------
 class User(UserMixin):
-    def __init__(self, id, role, name, original_id):
-        self.id = id
+    def __init__(self, uid, role, name, db_id):
+        self.id = uid
         self.role = role
         self.name = name
-        self.original_id = original_id
-
-    def get_id(self):
-        return self.id
+        self.db_id = db_id
 
     @property
     def is_admin(self):
@@ -45,12 +46,12 @@ class User(UserMixin):
         return self.role == "COLLEGE_ADMIN"
 
     @property
-    def is_student(self):
-        return self.role == "STUDENT"
-
-    @property
     def is_teacher(self):
         return self.role == "TEACHER"
+
+    @property
+    def is_student(self):
+        return self.role == "STUDENT"
 
 # ---------------- USER LOADER ----------------
 @login_manager.user_loader
@@ -60,39 +61,41 @@ def load_user(user_id):
     except ValueError:
         return None
 
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
-
     tables = {
         "SUPER_ADMIN": ("users", "username"),
         "COLLEGE_ADMIN": ("colleges", "college_name"),
+        "TEACHER": ("teachers", "name"),
         "STUDENT": ("students", "name"),
-        "TEACHER": ("teachers", "name")
     }
 
-    user = None
-    if role in tables:
-        table, name_col = tables[role]
-        cursor.execute(f"SELECT * FROM {table} WHERE id=%s", (db_id,))
-        data = cursor.fetchone()
-        if data:
-            user = User(user_id, role, data[name_col], db_id)
+    if role not in tables:
+        return None
 
+    table, name_col = tables[role]
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute(f"SELECT * FROM {table} WHERE id=%s", (db_id,))
+    data = cursor.fetchone()
     conn.close()
-    return user
 
-# ---------------- DECORATORS ----------------
+    if not data:
+        return None
+
+    return User(f"{role}:{db_id}", role, data[name_col], db_id)
+
+# ---------------- ROLE DECORATORS ----------------
 def role_required(check):
-    def wrapper(f):
+    def decorator(f):
         @wraps(f)
         @login_required
-        def decorated(*args, **kwargs):
+        def wrapped(*args, **kwargs):
             if not check():
-                flash("Unauthorized Access")
+                flash("Unauthorized access")
                 return redirect(url_for("home"))
             return f(*args, **kwargs)
-        return decorated
-    return wrapper
+        return wrapped
+    return decorator
 
 admin_required   = role_required(lambda: current_user.is_admin)
 college_required = role_required(lambda: current_user.is_college)
@@ -119,12 +122,12 @@ def logout():
     logout_user()
     return redirect(url_for("home"))
 
-# ================= COLLEGE LOGIN (🔥 FIX) =================
-@app.route("/college/login", methods=["GET", "POST"], endpoint="college_login")
+# ================= COLLEGE =================
+@app.route("/college/login", methods=["GET", "POST"])
 def college_login():
     if request.method == "POST":
-        email = request.form["email"]
-        password = request.form["password"]
+        email = request.form.get("email")
+        password = request.form.get("password")
 
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
@@ -145,7 +148,7 @@ def college_login():
             login_user(user)
             return redirect(url_for("college_dashboard"))
 
-        flash("Invalid College Credentials")
+        flash("Invalid college credentials")
 
     return render_template("college/login.html")
 
@@ -154,12 +157,12 @@ def college_login():
 def college_dashboard():
     return render_template("college/dashboard.html")
 
-# ---------------- TEACHER ----------------
+# ================= TEACHER =================
 @app.route("/teacher/login", methods=["GET", "POST"])
 def teacher_login():
     if request.method == "POST":
-        email = request.form["email"]
-        password = request.form["password"]
+        email = request.form.get("email")
+        password = request.form.get("password")
 
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
@@ -171,11 +174,16 @@ def teacher_login():
         conn.close()
 
         if data:
-            user = User(f"TEACHER:{data['id']}", "TEACHER", data["name"], data["id"])
+            user = User(
+                f"TEACHER:{data['id']}",
+                "TEACHER",
+                data["name"],
+                data["id"]
+            )
             login_user(user)
             return redirect(url_for("teacher_dashboard"))
 
-        flash("Invalid Teacher Credentials")
+        flash("Invalid teacher credentials")
 
     return render_template("teacher/login.html")
 
@@ -184,12 +192,12 @@ def teacher_login():
 def teacher_dashboard():
     return render_template("teacher/dashboard.html")
 
-# ---------------- ADMIN ----------------
+# ================= ADMIN =================
 @app.route("/admin/login", methods=["GET", "POST"])
 def admin_login():
     if request.method == "POST":
-        username = request.form["username"]
-        password = request.form["password"]
+        username = request.form.get("username")
+        password = request.form.get("password")
 
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
@@ -210,7 +218,7 @@ def admin_login():
             login_user(user)
             return redirect(url_for("admin_dashboard"))
 
-        flash("Invalid Admin Credentials")
+        flash("Invalid admin credentials")
 
     return render_template("admin/login.html")
 
@@ -219,12 +227,12 @@ def admin_login():
 def admin_dashboard():
     return render_template("admin/dashboard.html")
 
-# ---------------- STUDENT ----------------
+# ================= STUDENT =================
 @app.route("/student/login", methods=["GET", "POST"])
 def student_login():
     if request.method == "POST":
-        student_id = request.form["student_id"]
-        dob = request.form["dob"]
+        student_id = request.form.get("student_id")
+        dob = request.form.get("dob")
 
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
@@ -236,11 +244,16 @@ def student_login():
         conn.close()
 
         if data:
-            user = User(f"STUDENT:{data['id']}", "STUDENT", data["name"], data["id"])
+            user = User(
+                f"STUDENT:{data['id']}",
+                "STUDENT",
+                data["name"],
+                data["id"]
+            )
             login_user(user)
             return redirect(url_for("student_dashboard"))
 
-        flash("Invalid Student Login")
+        flash("Invalid student credentials")
 
     return render_template("student/login.html")
 
@@ -248,3 +261,5 @@ def student_login():
 @student_required
 def student_dashboard():
     return render_template("student/dashboard.html")
+
+# ❌ app.run() NOT needed (Render + Gunicorn handles it)
