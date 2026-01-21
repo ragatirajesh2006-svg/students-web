@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>College Dashboard</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+    <!-- Navbar -->
+    <div class="navbar">
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <i class="fas fa-university" style="font-size: 1.5rem; color: var(--primary-color);"></i>
+            <h2 style="margin: 0; color: #333;">College Dashboard</h2>
+        </div>
+        <div style="display: flex; gap: 10px; align-items: center;">
+            <span
+                style="background: rgba(78, 84, 200, 0.1); color: var(--primary-color); padding: 5px 10px; border-radius: 6px; font-weight: 600;">
+                {{ current_user.name }}
+            </span>
+            <a href="/logout" class="btn btn-danger">
+                Logout
+            </a>
+        </div>
+    </div>
+
+    <div class="container">
+
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+        <div
+            style="background: rgba(40, 167, 69, 0.1); color: var(--success-color); padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid var(--success-color);">
+            <p style="margin: 0; font-weight: 600;">{{ messages[0] }}</p>
+        </div>
+        {% endif %}
+        {% endwith %}
+
+        <!-- Add Student Section -->
+        <div class="card">
+            <h3 style="border-bottom: 2px solid #eee; padding-bottom: 15px; margin-bottom: 20px; color: #333;">Add New
+                Student</h3>
+            <form action="/college/add_student" method="post">
+                <div class="dashboard-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+                    <div class="form-group">
+                        <input type="text" name="roll" placeholder="Student ID / Roll No" required>
+                    </div>
+                    <div class="form-group">
+                        <input type="text" name="name" placeholder="Student Name" required>
+                    </div>
+                </div>
+                <div class="dashboard-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+                    <div class="form-group">
+                        <input type="text" name="phone" placeholder="Phone Number" required>
+                    </div>
+                    <div class="form-group">
+                        <input type="date" name="dob" required title="Date of Birth">
+                    </div>
+                    <div class="form-group">
+                        <input type="text" name="group" placeholder="Group Name (e.g. MPCS)" required>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%;">
+                    Add Student
+                </button>
+            </form>
+        </div>
+
+        <!-- Dashboard Grid -->
+        <div class="dashboard-grid" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));">
+
+            <!-- Manage Classes -->
+            <div class="card" style="text-align: center;">
+                <i class="fas fa-chalkboard"
+                    style="font-size: 2.5rem; color: var(--primary-color); margin-bottom: 15px;"></i>
+                <h3>Manage Classes</h3>
+                <p style="color: #666; margin-bottom: 20px;">Add Classes, Assign Subjects & Teachers</p>
+                <a href="{{ url_for('manage_classes') }}" class="btn btn-primary" style="display: block;">
+                    Class Management
+                </a>
+            </div>
+
+            <!-- Manage Teachers -->
+            <div class="card" style="text-align: center;">
+                <i class="fas fa-chalkboard-teacher"
+                    style="font-size: 2.5rem; color: var(--primary-color); margin-bottom: 15px;"></i>
+                <h3>Manage Teachers</h3>
+                <p style="color: #666; margin-bottom: 20px;">Add & Remove Teachers</p>
+                <a href="{{ url_for('manage_teachers') }}" class="btn btn-primary" style="display: block;">
+                    Go to Teachers
+                </a>
+            </div>
+
+            <!-- Monitor Attendance -->
+            <div class="card" style="text-align: center;">
+                <i class="fas fa-clipboard-check"
+                    style="font-size: 2.5rem; color: var(--primary-color); margin-bottom: 15px;"></i>
+                <h3>Attendance Monitor</h3>
+                <p style="color: #666; margin-bottom: 20px;">View Student Attendance Status</p>
+                <a href="{{ url_for('monitor_attendance') }}" class="btn btn-primary" style="display: block;">
+                    View Logs
+                </a>
+            </div>
+
+            <!-- Manage Subjects -->
+            <div class="card">
+                <h3 style="text-align: center; margin-bottom: 15px;">Manage Subjects</h3>
+                <form action="/college/add_subject" method="post" class="flex-gap" style="margin-bottom: 20px;">
+                    <input type="text" name="subject_name" placeholder="Subject Name" required style="flex: 1;">
+                    <button type="submit" class="btn btn-success"
+                        style="background-color: var(--success-color);">Add</button>
+                </form>
+
+                <h4 style="border-bottom: 1px solid #eee; padding-bottom: 5px; margin-bottom: 10px;">Subject List</h4>
+                <div style="max-height: 200px; overflow-y: auto;">
+                    <ul style="list-style: none; padding: 0; margin: 0;">
+                        {% for subject in subjects %}
+                        <li
+                            style="display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid #f0f0f0;">
+                            <span>{{ subject.subject_name }}</span>
+                            <a href="/college/delete_subject/{{ subject.id }}"
+                                style="color: var(--danger-color); font-size: 0.9rem;"
+                                onclick="return confirm('Delete this subject?')">Delete</a>
+                        </li>
+                        {% else %}
+                        <li style="color: #999; text-align: center;">No subjects added yet.</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Manage Exams -->
+            <div class="card">
+                <h3 style="text-align: center; margin-bottom: 15px;">Manage Exams</h3>
+                <form action="/college/add_exam" method="post" class="flex-gap" style="margin-bottom: 20px;">
+                    <input type="text" name="exam_name" placeholder="Exam Name (e.g. Mid 1)" required style="flex: 1;">
+                    <button type="submit" class="btn btn-success"
+                        style="background-color: var(--success-color);">Add</button>
+                </form>
+
+                <h4 style="border-bottom: 1px solid #eee; padding-bottom: 5px; margin-bottom: 10px;">Exam List</h4>
+                <div style="max-height: 200px; overflow-y: auto;">
+                    <ul style="list-style: none; padding: 0; margin: 0;">
+                        {% for exam in exams %}
+                        <li
+                            style="display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid #f0f0f0;">
+                            <span>{{ exam.exam_name }}</span>
+                            <a href="/college/delete_exam/{{ exam.id }}"
+                                style="color: var(--danger-color); font-size: 0.9rem;"
+                                onclick="return confirm('Delete this exam?')">Delete</a>
+                        </li>
+                        {% else %}
+                        <li style="color: #999; text-align: center;">No exams added yet.</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Upload Marks -->
+            <div class="card">
+                <h3 style="text-align: center; margin-bottom: 15px;">Upload Marks</h3>
+                <form action="/college/add_mark_dashboard" method="post">
+                    <div class="form-group">
+                        <label style="font-size: 0.85rem;">Student</label>
+                        <select name="student_id" required>
+                            <option value="" disabled selected>Select Student</option>
+                            {% for student in students %}
+                            <option value="{{ student.id }}">{{ student.name }} ({{ student.student_id }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label style="font-size: 0.85rem;">Exam Type</label>
+                        <select name="exam_type" required>
+                            <option value="" disabled selected>Select Exam Type</option>
+                            {% for exam in exams %}
+                            <option value="{{ exam.exam_name }}">{{ exam.exam_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="flex-gap">
+                        <div class="form-group" style="flex: 1;">
+                            <label style="font-size: 0.85rem;">Subject</label>
+                            <select name="subject" required>
+                                <option value="" disabled selected>Select Subject</option>
+                                {% for subject in subjects %}
+                                <option value="{{ subject.subject_name }}">{{ subject.subject_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group" style="flex: 1;">
+                            <label style="font-size: 0.85rem;">Marks</label>
+                            <input type="number" name="marks" placeholder="0.00" required step="0.01">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">
+                        Update Marks
+                    </button>
+                </form>
+            </div>
+
+        </div>
+
+        <!-- Students List Section -->
+        <div class="card">
+            <h3 style="border-bottom: 2px solid #eee; padding-bottom: 15px; margin-bottom: 20px; color: #333;">Your
+                Students</h3>
+
+            <!-- Group Filters -->
+            <div
+                style="margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between;">
+                <div style="display: flex; gap: 10px;">
+                    <a href="{{ url_for('college_dashboard') }}" class="btn btn-sm"
+                        style="{% if not selected_group %}background-color: var(--primary-color); color: white;{% else %}background-color: #eee; color: #333;{% endif %}">
+                        All
+                    </a>
+                    {% for g in groups %}
+                    <a href="{{ url_for('college_dashboard', group=g) }}" class="btn btn-sm"
+                        style="{% if selected_group == g %}background-color: var(--primary-color); color: white;{% else %}background-color: #eee; color: #333;{% endif %}">
+                        {{ g }}
+                    </a>
+                    {% endfor %}
+                </div>
+
+                <div style="flex: 1; min-width: 200px; max-width: 300px;">
+                    <input type="text" id="studentSearch" onkeyup="filterStudents()" placeholder="Search students..."
+                        style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px;">
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table id="studentsTable">
+                    <thead>
+                        <tr>
+                            <th>Roll No</th>
+                            <th>Name</th>
+                            <th>Group</th>
+                            <th>Total Marks</th>
+                            <th>Grade</th>
+                            <th>Attendance</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for student in students %}
+                        <tr>
+                            <td>{{ student.student_id }}</td>
+                            <td style="font-weight: 600;">{{ student.name }}</td>
+                            <td>{{ student.group_name }}</td>
+                            <td>{{ student.total }}</td>
+                            <td>
+                                <span
+                                    style="padding: 3px 8px; border-radius: 4px; font-size: 0.85rem; 
+                                    {% if student.grade == 'A' %}background: rgba(40, 167, 69, 0.1); color: var(--success-color);{% elif student.grade == 'F' %}background: rgba(220, 53, 69, 0.1); color: var(--danger-color);{% else %}background: rgba(255, 193, 7, 0.1); color: #d39e00;{% endif %}">
+                                    {{ student.grade }}
+                                </span>
+                            </td>
+                            <td>{{ student.attendance }}</td>
+                            <td>
+                                <a href="/college/manage_student/{{ student.id }}" class="btn btn-sm"
+                                    style="background-color: var(--primary-color); color: white;">
+                                    Manage
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+    <script>
+        function filterStudents() {
+            var input, filter, table, tr, td, i, txtValue;
+            input = document.getElementById("studentSearch");
+            filter = input.value.toUpperCase();
+            table = document.getElementById("studentsTable");
+            tr = table.getElementsByTagName("tr");
+
+            for (i = 1; i < tr.length; i++) {
+                var found = false;
+                var tds = tr[i].getElementsByTagName("td");
+                for (var j = 0; j < tds.length; j++) {
+                    td = tds[j];
+                    if (td) {
+                        txtValue = td.textContent || td.innerText;
+                        if (txtValue.toUpperCase().indexOf(filter) > -1) {
+                            found = true;
+                            break;
+                        }
+                    }
+                }
+                if (found) {
+                    tr[i].style.display = "";
+                } else {
+                    tr[i].style.display = "none";
+                }
+            }
+        }
+    </script>
+</body>
+
+</html>

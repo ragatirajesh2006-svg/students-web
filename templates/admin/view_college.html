@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>College Details - Admin View</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+    <div class="navbar">
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <i class="fas fa-university" style="font-size: 1.5rem; color: var(--primary-color);"></i>
+            <h2 style="margin: 0; color: #333;">College Data</h2>
+        </div>
+        <a href="/admin/dashboard" class="btn" style="background-color: #e0e0e0; color: #333;">
+            <i class="fas fa-arrow-left"></i> Dashboard
+        </a>
+    </div>
+
+    <div class="container">
+
+        <!-- College Info Card -->
+        <div class="card" style="text-align: center; border-left: 5px solid var(--primary-color);">
+            <h1 style="color: var(--primary-color); margin-bottom: 5px;">{{ college.college_name }}</h1>
+            <p style="color: #666; font-size: 1.1rem; margin: 0;">Administrative View</p>
+        </div>
+
+        <!-- Student Performance Report -->
+        <div class="card">
+            <div style="border-bottom: 2px solid #eee; padding-bottom: 15px; margin-bottom: 20px;">
+                <h3 style="margin: 0; color: #333;">Student Performance Report</h3>
+            </div>
+
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Roll No</th>
+                            <th>Name</th>
+                            <th>Performance (Subjects & Marks)</th>
+                            <th>Total</th>
+                            <th>Grade</th>
+                            <th>Attendance</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if students %}
+                        {% for student in students %}
+                        <tr>
+                            <td style="font-family: monospace; font-weight: 600;">{{ student.student_id }}</td>
+                            <td>{{ student.name }}</td>
+                            <td>
+                                {% if student.subjects %}
+                                <ul style="list-style: none; padding: 0; margin: 0;">
+                                    {% for sub in student.subjects %}
+                                    <li
+                                        style="display: flex; justify-content: space-between; border-bottom: 1px solid #eee; padding: 4px 0;">
+                                        <span>{{ sub.subject }}</span>
+                                        <span style="font-weight: bold;">{{ sub.marks }}</span>
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                                {% else %}
+                                <span style="color: #999; font-style: italic;">No marks entry</span>
+                                {% endif %}
+                            </td>
+                            <td style="font-weight: bold; color: var(--primary-color);">{{ student.total }}</td>
+                            <td>
+                                <span
+                                    style="background: #333; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.85rem;">{{
+                                    student.grade }}</span>
+                            </td>
+                            <td style="color: var(--primary-color); font-weight: bold;">{{ student.attendance }}</td>
+                        </tr>
+                        {% endfor %}
+                        {% else %}
+                        <tr>
+                            <td colspan="6" style="text-align: center; padding: 30px; color: #777;">
+                                No students found for this college.
+                            </td>
+                        </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+</body>
+
+</html>

@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Management System</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        /* Local overrides for the landing page to make it extra attractive */
+        body {
+            /* Ensure the gradient covers the full viewport */
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .landing-header h1 {
+            color: white;
+            font-size: 3.5rem;
+            margin-bottom: 1rem;
+            text-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .landing-header p {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 1.25rem;
+            margin-bottom: 4rem;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+            line-height: 1.6;
+        }
+
+        /* Enhanced Grid */
+        .login-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 40px;
+            /* Generous gap */
+            margin-top: 20px;
+            justify-content: center;
+        }
+
+        /* Enhanced Cards */
+        .login-card-item {
+            background: white;
+            border-radius: 20px;
+            /* Softer rounded corners */
+            padding: 40px 30px;
+            text-align: center;
+            text-decoration: none;
+            color: #333;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            /* Bouncy transition */
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100%;
+            border-top: 6px solid transparent;
+            /* Placeholder for colorful borders */
+        }
+
+        .login-card-item:hover {
+            transform: translateY(-10px) scale(1.02);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Card Icon Backgrounds */
+        .icon-wrapper {
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 25px;
+            background: #f8f9fa;
+            font-size: 2.5rem;
+            transition: background 0.3s ease, color 0.3s ease;
+        }
+
+        /* Specific Card Styles */
+
+        /* Super Admin - Purple/Primary */
+        .card-admin {
+            border-top-color: #4e54c8;
+        }
+
+        .card-admin .icon-wrapper {
+            color: #4e54c8;
+            background: rgba(78, 84, 200, 0.1);
+        }
+
+        .card-admin:hover .icon-wrapper {
+            background: #4e54c8;
+            color: white;
+        }
+
+        /* College Admin - Blue */
+        .card-college {
+            border-top-color: #2980b9;
+        }
+
+        .card-college .icon-wrapper {
+            color: #2980b9;
+            background: rgba(41, 128, 185, 0.1);
+        }
+
+        .card-college:hover .icon-wrapper {
+            background: #2980b9;
+            color: white;
+        }
+
+        /* Teacher - Green */
+        .card-teacher {
+            border-top-color: #27ae60;
+        }
+
+        .card-teacher .icon-wrapper {
+            color: #27ae60;
+            background: rgba(39, 174, 96, 0.1);
+        }
+
+        .card-teacher:hover .icon-wrapper {
+            background: #27ae60;
+            color: white;
+        }
+
+        /* Student - Pink/Orange */
+        .card-student {
+            border-top-color: #e84393;
+        }
+
+        .card-student .icon-wrapper {
+            color: #e84393;
+            background: rgba(232, 67, 147, 0.1);
+        }
+
+        .card-student:hover .icon-wrapper {
+            background: #e84393;
+            color: white;
+        }
+
+
+        .card-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: #2d3436;
+        }
+
+        .card-desc {
+            font-size: 1rem;
+            color: #636e72;
+            margin: 0;
+            font-weight: 500;
+        }
+
+        footer {
+            margin-top: 5rem;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.9rem;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+
+        <div class="landing-header" style="text-align: center;">
+            <h1>Student Management System</h1>
+            <p>
+                A unified platform for simplified academic management. <br>
+                Connects Super Admins, Colleges, Teachers, and Students seamlessly.
+            </p>
+        </div>
+
+        <div class="login-grid">
+
+            <!-- Super Admin -->
+            <a href="{{ url_for('admin_login') }}" class="login-card-item card-admin">
+                <div class="icon-wrapper">
+                    <i class="fas fa-crown"></i>
+                </div>
+                <div class="card-title">Super Admin</div>
+                <p class="card-desc">Website Owner & Control</p>
+            </a>
+
+            <!-- College Admin -->
+            <a href="{{ url_for('college_login') }}" class="login-card-item card-college">
+                <div class="icon-wrapper">
+                    <i class="fas fa-university"></i>
+                </div>
+                <div class="card-title">College Admin</div>
+                <p class="card-desc">Institute Management</p>
+            </a>
+
+            <!-- Teacher -->
+            <a href="{{ url_for('teacher_login') }}" class="login-card-item card-teacher">
+                <div class="icon-wrapper">
+                    <i class="fas fa-chalkboard-teacher"></i>
+                </div>
+                <div class="card-title">Teacher Login</div>
+                <p class="card-desc">Classroom & Marks</p>
+            </a>
+
+            <!-- Student -->
+            <a href="{{ url_for('student_login') }}" class="login-card-item card-student">
+                <div class="icon-wrapper">
+                    <i class="fas fa-user-graduate"></i>
+                </div>
+                <div class="card-title">Student Login</div>
+                <p class="card-desc">Reports & Analytics</p>
+            </a>
+
+        </div>
+
+        <footer>
+            &copy; 2024 Student Management System. All rights reserved.
+        </footer>
+
+    </div>
+
+</body>
+
+</html>

@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Register - Student Management</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .radio-group {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+            justify-content: center;
+        }
+
+        .radio-option {
+            background: #eee;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 2px solid transparent;
+        }
+
+        .radio-option:hover {
+            background: #e0e0e0;
+        }
+
+        input[type="radio"]:checked+.radio-option-label {
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        /* Hide default radio but keep logic */
+        input[type="radio"] {
+            display: none;
+        }
+
+        .selected-option {
+            border-color: var(--primary-color);
+            background: #eef2ff;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="login-container">
+        <div class="card login-card" style="max-width: 500px;">
+            <h2><i class="fas fa-user-plus"></i> Register</h2>
+
+            {% with messages = get_flashed_messages() %}
+            {% if messages %}
+            <div class="alert">
+                {{ messages[0] }}
+            </div>
+            {% endif %}
+            {% endwith %}
+
+            <form method="post" action="/register">
+                <div class="form-group">
+                    <input type="text" name="username" placeholder="Choose a Username" required autofocus>
+                </div>
+                <div class="form-group">
+                    <input type="password" name="password" placeholder="Choose a Password" required>
+                </div>
+
+                <label style="margin-bottom: 10px;">Select Institution Type:</label>
+                <div class="radio-group">
+                    <label>
+                        <input type="radio" name="institution_type" value="College"
+                            onclick="toggleInstitutionInput('College')" required>
+                        <div class="radio-option" id="opt-college">College</div>
+                    </label>
+                    <label>
+                        <input type="radio" name="institution_type" value="School"
+                            onclick="toggleInstitutionInput('School')" required>
+                        <div class="radio-option" id="opt-school">School</div>
+                    </label>
+                </div>
+
+                <div class="form-group" id="institution-input-container" style="display: none;">
+                    <label id="institution-label">Enter Name</label>
+                    <input type="text" name="institution_name" id="institution_name" placeholder="E.g. IIT Bombay">
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="width: 100%;">Create Account</button>
+            </form>
+
+            <div style="margin-top: 15px;">
+                <a href="/login" style="text-decoration: none; color: var(--primary-color);">Already have an account?
+                    Login</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function toggleInstitutionInput(type) {
+            const container = document.getElementById('institution-input-container');
+            const label = document.getElementById('institution-label');
+            const input = document.getElementById('institution_name');
+
+            // Visual selection
+            document.getElementById('opt-college').classList.remove('selected-option');
+            document.getElementById('opt-school').classList.remove('selected-option');
+
+            if (type === 'College') {
+                document.getElementById('opt-college').classList.add('selected-option');
+                label.innerText = 'Enter College Name';
+                input.placeholder = 'E.g. Andhra University';
+            } else {
+                document.getElementById('opt-school').classList.add('selected-option');
+                label.innerText = 'Enter School Name';
+                input.placeholder = 'E.g. Z.P.H.S High School';
+            }
+
+            container.style.display = 'block';
+            input.required = true;
+        }
+    </script>
+
+</body>
+
+</html>

@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teacher Dashboard</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+    <div class="navbar">
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <i class="fas fa-chalkboard-teacher" style="font-size: 1.5rem; color: var(--primary-color);"></i>
+            <h2 style="margin: 0; color: #333;">Teacher Dashboard</h2>
+        </div>
+        <div style="display: flex; gap: 10px; align-items: center;">
+            <span
+                style="background: rgba(78, 84, 200, 0.1); color: var(--primary-color); padding: 5px 10px; border-radius: 6px; font-weight: 600;">
+                {{ current_user.name }}
+            </span>
+            <a href="{{ url_for('logout') }}" class="btn btn-danger">
+                Logout
+            </a>
+        </div>
+    </div>
+
+    <div class="container">
+
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+        <div
+            style="background: rgba(40, 167, 69, 0.1); color: var(--success-color); padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid var(--success-color);">
+            <p style="margin: 0; font-weight: 600;">{{ messages[0] }}</p>
+        </div>
+        {% endif %}
+        {% endwith %}
+
+        <div class="card">
+            <div
+                style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #eee; padding-bottom: 15px; margin-bottom: 20px;">
+                <h3 style="margin: 0; color: #333;">Attendance Requests</h3>
+                <span
+                    style="background: var(--primary-color); color: white; padding: 2px 10px; border-radius: 12px; font-size: 0.85rem;">{{
+                    requests|length }} Pending</span>
+            </div>
+
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Date & Time</th>
+                            <th>Student Name</th>
+                            <th>Roll No</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for req in requests %}
+                        <tr>
+                            <td>
+                                <div style="font-weight: bold;">{{ req.date }}</div>
+                                <div style="font-size: 0.85rem; color: #666;">{{ req.time }}</div>
+                            </td>
+                            <td style="font-weight: bold;">{{ req.student_name }}</td>
+                            <td style="font-family: monospace;">{{ req.student_roll }}</td>
+                            <td>
+                                {% if req.status == 'Pending' %}
+                                <span
+                                    style="background: rgba(255, 193, 7, 0.1); color: #d39e00; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 0.85rem;">Pending</span>
+                                {% elif req.status == 'Accepted' %}
+                                <span
+                                    style="background: rgba(40, 167, 69, 0.1); color: var(--success-color); padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 0.85rem;">Accepted</span>
+                                {% else %}
+                                <span
+                                    style="background: rgba(220, 53, 69, 0.1); color: var(--danger-color); padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 0.85rem;">Rejected</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if req.status == 'Pending' %}
+                                <div style="display: flex; gap: 5px;">
+                                    <a href="{{ url_for('handle_request', req_id=req['id'], action='accept') }}"
+                                        class="btn btn-sm btn-success"
+                                        style="background-color: var(--success-color); color: white;" title="Accept">
+                                        <i class="fas fa-check"></i>
+                                    </a>
+                                    <a href="{{ url_for('handle_request', req_id=req['id'], action='reject') }}"
+                                        class="btn btn-sm btn-danger" title="Reject">
+                                        <i class="fas fa-times"></i>
+                                    </a>
+                                </div>
+                                {% else %}
+                                <span style="color: #999; font-style: italic; font-size: 0.85rem;">Decided by {{
+                                    req.accepted_by }}</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+
+                        {% if not requests %}
+                        <tr>
+                            <td colspan="5" style="text-align: center; padding: 30px; color: #777;">No pending
+                                attendance requests found.</td>
+                        </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+</body>
+
+</html>

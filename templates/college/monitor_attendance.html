@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitor Attendance</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+    <div class="navbar">
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <i class="fas fa-clipboard-check" style="font-size: 1.5rem; color: var(--primary-color);"></i>
+            <h2 style="margin: 0; color: #333;">Monitor Attendance</h2>
+        </div>
+        <a href="{{ url_for('college_dashboard') }}" class="btn" style="background-color: #e0e0e0; color: #333;">
+            <i class="fas fa-arrow-left"></i> Dashboard
+        </a>
+    </div>
+
+    <div class="container">
+
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+        <div
+            style="background: rgba(40, 167, 69, 0.1); color: var(--success-color); padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid var(--success-color);">
+            <p style="margin: 0; font-weight: 600;">{{ messages[0] }}</p>
+        </div>
+        {% endif %}
+        {% endwith %}
+
+        <div class="card">
+            <h3 style="border-bottom: 2px solid #eee; padding-bottom: 15px; margin-bottom: 20px; color: #333;">Student
+                Attendance Logs</h3>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Student Name</th>
+                            <th>Date</th>
+                            <th>Status</th>
+                            <th>Accepted Teacher</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for req in requests %}
+                        <tr>
+                            <td>{{ req.student_name }}</td>
+                            <td>
+                                <div style="font-weight: bold;">{{ req.date }}</div>
+                                <div style="font-size: 0.85rem; color: #666;">{{ req.time }}</div>
+                            </td>
+                            <td>
+                                {% if req.status == 'Pending' %}
+                                <span
+                                    style="background: rgba(255, 193, 7, 0.1); color: #d39e00; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 0.85rem;">Pending</span>
+                                {% elif req.status == 'Accepted' %}
+                                <span
+                                    style="background: rgba(40, 167, 69, 0.1); color: var(--success-color); padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 0.85rem;">Accepted</span>
+                                {% else %}
+                                <span
+                                    style="background: rgba(220, 53, 69, 0.1); color: var(--danger-color); padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 0.85rem;">Rejected</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if req.accepted_by %}
+                                <span style="color: var(--primary-color); font-weight: bold;">{{ req.accepted_by
+                                    }}</span>
+                                {% else %}
+                                <span style="color: #999;">-</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+
+                        {% if not requests %}
+                        <tr>
+                            <td colspan="4" style="text-align: center; padding: 30px; color: #777;">No attendance
+                                records found.</td>
+                        </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+</body>
+
+</html>

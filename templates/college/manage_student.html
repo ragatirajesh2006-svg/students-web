@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Student</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script>
+        // Keeping original JS logic (though not strictly used in standard form submission, good to keep)
+        function calculateGrade() {
+            // Logic exists on server mostly, but kept if needed
+        }
+    </script>
+</head>
+
+<body>
+
+    <div class="navbar">
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <i class="fas fa-user-edit" style="font-size: 1.5rem; color: var(--primary-color);"></i>
+            <div>
+                <h2 style="margin: 0; color: #333;">Manage Student</h2>
+                <p style="margin: 0; font-size: 0.9rem; color: #666;">{{ student.name }} ({{ student.student_id }})</p>
+            </div>
+        </div>
+        <a href="/college/dashboard" class="btn" style="background-color: #e0e0e0; color: #333;">
+            <i class="fas fa-arrow-left"></i> Dashboard
+        </a>
+    </div>
+
+    <div class="container">
+
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+        <div
+            style="background: rgba(40, 167, 69, 0.1); color: var(--success-color); padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid var(--success-color);">
+            <p style="margin: 0; font-weight: 600;">{{ messages[0] }}</p>
+        </div>
+        {% endif %}
+        {% endwith %}
+
+        <div style="display: flex; flex-direction: column; gap: 25px;">
+
+            <!-- Attendance Form -->
+            <div class="card">
+                <h3 style="border-bottom: 2px solid #eee; padding-bottom: 15px; margin-bottom: 20px; color: #333;">
+                    Update Attendance Details</h3>
+                <form method="post">
+                    <input type="hidden" name="action" value="update_attendance">
+                    <div class="dashboard-grid"
+                        style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); align-items: end;">
+
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label>Total Days</label>
+                            <input type="number" name="total_days" placeholder="Total Working Days" required
+                                value="{{ attendance.total_days if attendance else '' }}">
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label>Present Days</label>
+                            <input type="number" name="present_days" placeholder="Days Present" required
+                                value="{{ attendance.present_days if attendance else '' }}">
+                        </div>
+
+                        <button type="submit" class="btn btn-primary" style="height: 46px;">
+                            Update Attendance
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Marks Section -->
+            <div class="card">
+                <h3 style="border-bottom: 2px solid #eee; padding-bottom: 15px; margin-bottom: 20px; color: #333;">
+                    Academic Performance</h3>
+
+                <!-- Existing Marks Table -->
+                <div class="table-responsive" style="margin-bottom: 30px;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Subject</th>
+                                <th>Exam Type</th>
+                                <th>Marks</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for mark in marks %}
+                            <tr>
+                                <td>{{ mark.subject }}</td>
+                                <td>{{ mark.exam_type }}</td>
+                                <td>{{ mark.marks }}</td>
+                                <td>
+                                    <a href="/college/delete_mark/{{ mark.id }}"
+                                        onclick="return confirm('Are you sure you want to delete this mark?');"
+                                        class="btn btn-sm btn-danger">
+                                        <i class="fas fa-trash-alt"></i> Delete
+                                    </a>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="4" style="text-align: center; padding: 30px; color: #777;">No
+                                    subjects/marks added yet.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Add New Subject Form -->
+                <div style="background: #f9f9f9; padding: 20px; border-radius: 8px; border: 1px solid #eee;">
+                    <h4 style="margin-top: 0; margin-bottom: 15px; color: #333;">Add / Update Subject</h4>
+                    <form method="post">
+                        <input type="hidden" name="action" value="add_mark">
+                        <div class="dashboard-grid"
+                            style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); align-items: end; gap: 15px;">
+
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label>Subject Name</label>
+                                <input type="text" name="subject" placeholder="e.g., Mathematics" required>
+                            </div>
+
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label>Exam Type</label>
+                                <select name="exam_type" required>
+                                    <option value="" disabled selected>Select Exam Type</option>
+                                    {% for exam in exams %}
+                                    <option value="{{ exam.exam_name }}">{{ exam.exam_name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label>Marks Obtained</label>
+                                <input type="number" name="marks" placeholder="Enter Marks" required>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary" style="height: 46px;">
+                                Add Mark
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <div
+                    style="margin-top: 20px; padding: 15px; background: #fff; border: 1px solid #ddd; border-radius: 8px; display: flex; align-items: center; justify-content: space-between;">
+                    <label style="font-weight: bold; margin: 0;">Calculated Grade (Average)</label>
+                    <input type="text" id="grade" value="{{ grade.grade if grade else 'N/A' }}" readonly
+                        style="width: 100px; text-align: center; font-weight: bold; font-size: 1.2rem; border: none; background: transparent;">
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+</body>
+
+</html>
