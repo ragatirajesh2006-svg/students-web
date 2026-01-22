@@ -1,4 +1,3 @@
-Flask
-flask-login
-mysql-connector-python
+Django>=4.2
 gunicorn
+mysqlclient
