@@ -28,11 +28,12 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = "admin_login"
 
-# ================= USER =================
+# ================= USER MODEL =================
 class User(UserMixin):
-    def __init__(self, uid, role):
+    def __init__(self, uid, role, name=None):
         self.id = uid
         self.role = role
+        self.name = name
 
     @property
     def is_admin(self):
@@ -58,12 +59,12 @@ def load_user(user_id):
     if not data:
         return None
 
-    return User(f"SUPER_ADMIN:{db_id}", "SUPER_ADMIN")
+    return User(f"SUPER_ADMIN:{db_id}", "SUPER_ADMIN", data["email"])
 
 # ================= HOME =================
 @app.route("/")
 def home():
-    return redirect(url_for("admin_login"))
+    return render_template("index.html")  # cards page
 
 # ================= ADMIN LOGIN =================
 @app.route("/admin/login", methods=["GET", "POST"])
@@ -82,7 +83,11 @@ def admin_login():
         conn.close()
 
         if admin:
-            user = User(f"SUPER_ADMIN:{admin['id']}", "SUPER_ADMIN")
+            user = User(
+                f"SUPER_ADMIN:{admin['id']}",
+                "SUPER_ADMIN",
+                admin["email"]
+            )
             login_user(user)
             return redirect(url_for("admin_dashboard"))
 
@@ -97,9 +102,49 @@ def admin_dashboard():
     if not current_user.is_admin:
         flash("Unauthorized")
         return redirect(url_for("admin_login"))
-    return render_template("admin/dashboard.html")
 
-# ================= ADMIN SETTINGS (FIXED) =================
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("SELECT * FROM colleges")
+    colleges = cursor.fetchall()
+    conn.close()
+
+    return render_template(
+        "admin/dashboard.html",
+        colleges=colleges
+    )
+
+# ================= CREATE COLLEGE (FIXED) =================
+@app.route("/admin/create_college", methods=["POST"])
+@login_required
+def create_college():
+    if not current_user.is_admin:
+        flash("Unauthorized")
+        return redirect(url_for("admin_login"))
+
+    college_name = request.form.get("college_name")
+    email = request.form.get("email")
+    password = request.form.get("password")
+
+    if not college_name or not email or not password:
+        flash("All fields required")
+        return redirect(url_for("admin_dashboard"))
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "INSERT INTO colleges (college_name, email, password) VALUES (%s,%s,%s)",
+        (college_name, email, password)
+    )
+
+    conn.commit()
+    conn.close()
+
+    flash("College created successfully ✅")
+    return redirect(url_for("admin_dashboard"))
+
+# ================= ADMIN SETTINGS =================
 @app.route("/admin/settings")
 @login_required
 def admin_settings():
