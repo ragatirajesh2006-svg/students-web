@@ -7,7 +7,8 @@ from flask_login import (
 )
 from functools import wraps
 import os
-
+from dotenv import load_dotenv
+load_dotenv()
 # ---------------- APP SETUP ----------------
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "dev-secret-key")
@@ -201,15 +202,17 @@ def teacher_dashboard():
 @app.route("/admin/login", methods=["GET", "POST"])
 def admin_login():
     if request.method == "POST":
-        username = request.form.get("username")
+        email = request.form.get("email")
         password = request.form.get("password")
 
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
+
         cursor.execute(
-            "SELECT * FROM users WHERE username=%s AND password=%s",
-            (username, password)
+            "SELECT * FROM super_admin WHERE email=%s AND password=%s",
+            (email, password)
         )
+
         data = cursor.fetchone()
         conn.close()
 
@@ -217,7 +220,7 @@ def admin_login():
             user = User(
                 f"SUPER_ADMIN:{data['id']}",
                 "SUPER_ADMIN",
-                data["username"],
+                data["email"],   # 👈 username kaadu, email
                 data["id"]
             )
             login_user(user)
@@ -226,7 +229,6 @@ def admin_login():
         flash("Invalid admin credentials")
 
     return render_template("admin/login.html")
-
 @app.route("/admin/dashboard")
 @admin_required
 def admin_dashboard():
@@ -273,3 +275,5 @@ def student_dashboard():
     return render_template("student/dashboard.html")
 
 # ❌ app.run() NOT needed (Gunicorn handles it)
+if __name__ == "__main__":
+    app.run(debug=True)
