@@ -8,12 +8,15 @@ from flask_login import (
 from functools import wraps
 import os
 from dotenv import load_dotenv
+
+# ---------------- ENV ----------------
 load_dotenv()
-# ---------------- APP SETUP ----------------
+
+# ---------------- APP ----------------
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "dev-secret-key")
 
-# ---------------- DATABASE CONFIG (RAILWAY SAFE) ----------------
+# ---------------- DB CONFIG ----------------
 db_config = {
     "host": os.getenv("MYSQLHOST"),
     "user": os.getenv("MYSQLUSER"),
@@ -25,10 +28,10 @@ db_config = {
 def get_db_connection():
     return mysql.connector.connect(**db_config)
 
-# ---------------- LOGIN SETUP ----------------
+# ---------------- LOGIN MANAGER ----------------
 login_manager = LoginManager()
 login_manager.init_app(app)
-login_manager.login_view = "home"
+login_manager.login_view = "admin_login"
 
 # ---------------- USER MODEL ----------------
 class User(UserMixin):
@@ -54,7 +57,7 @@ class User(UserMixin):
     def is_student(self):
         return self.role == "STUDENT"
 
-# ---------------- USER LOADER ----------------
+# ---------------- USER LOADER (FIXED) ----------------
 @login_manager.user_loader
 def load_user(user_id):
     try:
@@ -63,7 +66,7 @@ def load_user(user_id):
         return None
 
     tables = {
-        "SUPER_ADMIN": ("users", "username"),
+        "SUPER_ADMIN": ("super_admin", "email"),
         "COLLEGE_ADMIN": ("colleges", "college_name"),
         "TEACHER": ("teachers", "name"),
         "STUDENT": ("students", "name"),
@@ -123,6 +126,41 @@ def logout():
     logout_user()
     return redirect(url_for("home"))
 
+# ================= ADMIN =================
+@app.route("/admin/login", methods=["GET", "POST"])
+def admin_login():
+    if request.method == "POST":
+        email = request.form.get("email")
+        password = request.form.get("password")
+
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute(
+            "SELECT * FROM super_admin WHERE email=%s AND password=%s",
+            (email, password)
+        )
+        data = cursor.fetchone()
+        conn.close()
+
+        if data:
+            user = User(
+                f"SUPER_ADMIN:{data['id']}",
+                "SUPER_ADMIN",
+                data["email"],
+                data["id"]
+            )
+            login_user(user)
+            return redirect(url_for("admin_dashboard"))
+
+        flash("Invalid admin credentials")
+
+    return render_template("admin/login.html")
+
+@app.route("/admin/dashboard")
+@admin_required
+def admin_dashboard():
+    return render_template("admin/dashboard.html")
+
 # ================= COLLEGE =================
 @app.route("/college/login", methods=["GET", "POST"])
 def college_login():
@@ -165,10 +203,6 @@ def teacher_login():
         email = request.form.get("email")
         password = request.form.get("password")
 
-        if not email or not password:
-            flash("Email and Password required")
-            return redirect(url_for("teacher_login"))
-
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
         cursor.execute(
@@ -188,8 +222,7 @@ def teacher_login():
             login_user(user)
             return redirect(url_for("teacher_dashboard"))
 
-        flash("Invalid Teacher Credentials")
-        return redirect(url_for("teacher_login"))
+        flash("Invalid teacher credentials")
 
     return render_template("teacher/login.html")
 
@@ -198,52 +231,12 @@ def teacher_login():
 def teacher_dashboard():
     return render_template("teacher/dashboard.html")
 
-# ================= ADMIN =================
-@app.route("/admin/login", methods=["GET", "POST"])
-def admin_login():
-    if request.method == "POST":
-        email = request.form.get("email")
-        password = request.form.get("password")
-
-        conn = get_db_connection()
-        cursor = conn.cursor(dictionary=True)
-
-        cursor.execute(
-            "SELECT * FROM super_admin WHERE email=%s AND password=%s",
-            (email, password)
-        )
-
-        data = cursor.fetchone()
-        conn.close()
-
-        if data:
-            user = User(
-                f"SUPER_ADMIN:{data['id']}",
-                "SUPER_ADMIN",
-                data["email"],   # 👈 username kaadu, email
-                data["id"]
-            )
-            login_user(user)
-            return redirect(url_for("admin_dashboard"))
-
-        flash("Invalid admin credentials")
-
-    return render_template("admin/login.html")
-@app.route("/admin/dashboard")
-@admin_required
-def admin_dashboard():
-    return render_template("admin/dashboard.html")
-
 # ================= STUDENT =================
 @app.route("/student/login", methods=["GET", "POST"])
 def student_login():
     if request.method == "POST":
         student_id = request.form.get("student_id")
         dob = request.form.get("dob")
-
-        if not student_id or not dob:
-            flash("Student ID and DOB required")
-            return redirect(url_for("student_login"))
 
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
@@ -264,8 +257,7 @@ def student_login():
             login_user(user)
             return redirect(url_for("student_dashboard"))
 
-        flash("Invalid Student ID or Date of Birth")
-        return redirect(url_for("student_login"))
+        flash("Invalid student credentials")
 
     return render_template("student/login.html")
 
@@ -274,6 +266,6 @@ def student_login():
 def student_dashboard():
     return render_template("student/dashboard.html")
 
-# ❌ app.run() NOT needed (Gunicorn handles it)
+# ---------------- LOCAL RUN ----------------
 if __name__ == "__main__":
     app.run(debug=True)
