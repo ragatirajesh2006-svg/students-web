@@ -12,13 +12,13 @@ import os
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "dev-secret-key")
 
-# ---------------- DATABASE CONFIG ----------------
+# ---------------- DATABASE CONFIG (RAILWAY SAFE) ----------------
 db_config = {
-    "host": os.getenv("DB_HOST", "localhost"),
-    "user": os.getenv("DB_USER", "root"),
-    "password": os.getenv("DB_PASSWORD", ""),
-    "database": os.getenv("DB_NAME", "student_db"),
-    "port": int(os.getenv("DB_PORT", 3306))
+    "host": os.getenv("MYSQLHOST"),
+    "user": os.getenv("MYSQLUSER"),
+    "password": os.getenv("MYSQLPASSWORD"),
+    "database": os.getenv("MYSQLDATABASE"),
+    "port": int(os.getenv("MYSQLPORT", 3306))
 }
 
 def get_db_connection():
@@ -164,36 +164,25 @@ def teacher_login():
         email = request.form.get("email")
         password = request.form.get("password")
 
-        # ✅ Safety check (IMPORTANT)
         if not email or not password:
             flash("Email and Password required")
             return redirect(url_for("teacher_login"))
 
-        try:
-            conn = get_db_connection()
-            cursor = conn.cursor(dictionary=True)
-
-            cursor.execute(
-                "SELECT * FROM teachers WHERE email=%s AND password=%s",
-                (email, password)
-            )
-            data = cursor.fetchone()
-
-        except Exception as e:
-            print("Teacher login DB error:", e)
-            flash("Server error. Try again later.")
-            return redirect(url_for("teacher_login"))
-
-        finally:
-            if conn:
-                conn.close()
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute(
+            "SELECT * FROM teachers WHERE email=%s AND password=%s",
+            (email, password)
+        )
+        data = cursor.fetchone()
+        conn.close()
 
         if data:
             user = User(
-                id=f"TEACHER:{data['id']}",
-                role="TEACHER",
-                name=data["name"],
-                original_id=data["id"]
+                f"TEACHER:{data['id']}",
+                "TEACHER",
+                data["name"],
+                data["id"]
             )
             login_user(user)
             return redirect(url_for("teacher_dashboard"))
@@ -202,7 +191,6 @@ def teacher_login():
         return redirect(url_for("teacher_login"))
 
     return render_template("teacher/login.html")
-
 
 @app.route("/teacher/dashboard")
 @teacher_required
@@ -251,36 +239,25 @@ def student_login():
         student_id = request.form.get("student_id")
         dob = request.form.get("dob")
 
-        # ✅ Empty check (VERY IMPORTANT)
         if not student_id or not dob:
             flash("Student ID and DOB required")
             return redirect(url_for("student_login"))
 
-        try:
-            conn = get_db_connection()
-            cursor = conn.cursor(dictionary=True)
-
-            cursor.execute(
-                "SELECT * FROM students WHERE student_id=%s AND dob=%s",
-                (student_id, dob)
-            )
-            data = cursor.fetchone()
-
-        except Exception as e:
-            print("Student login DB error:", e)
-            flash("Server error. Please try again later.")
-            return redirect(url_for("student_login"))
-
-        finally:
-            if conn:
-                conn.close()
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute(
+            "SELECT * FROM students WHERE student_id=%s AND dob=%s",
+            (student_id, dob)
+        )
+        data = cursor.fetchone()
+        conn.close()
 
         if data:
             user = User(
-                id=f"STUDENT:{data['id']}",
-                role="STUDENT",
-                name=data["name"],
-                original_id=data["id"]
+                f"STUDENT:{data['id']}",
+                "STUDENT",
+                data["name"],
+                data["id"]
             )
             login_user(user)
             return redirect(url_for("student_dashboard"))
@@ -290,10 +267,9 @@ def student_login():
 
     return render_template("student/login.html")
 
-
 @app.route("/student/dashboard")
 @student_required
 def student_dashboard():
     return render_template("student/dashboard.html")
 
-# ❌ app.run() NOT needed (Render + Gunicorn handles it)
+# ❌ app.run() NOT needed (Gunicorn handles it)
