@@ -26,7 +26,7 @@ def get_db_connection():
 # ================= LOGIN =================
 login_manager = LoginManager()
 login_manager.init_app(app)
-login_manager.login_view = "admin_login"
+login_manager.login_view = "home"   # 🔥 VERY IMPORTANT
 
 # ================= USER MODEL =================
 class User(UserMixin):
@@ -61,12 +61,12 @@ def load_user(user_id):
 
     return User(f"SUPER_ADMIN:{db_id}", "SUPER_ADMIN", data["email"])
 
-# ================= HOME =================
+# ================= HOME (CARDS PAGE) =================
 @app.route("/")
 def home():
-    return render_template("index.html")  # cards page
+    return render_template("index.html")  # 🔥 cards page
 
-# ================= ADMIN LOGIN =================
+# ================= SUPER ADMIN LOGIN =================
 @app.route("/admin/login", methods=["GET", "POST"])
 def admin_login():
     if request.method == "POST":
@@ -100,8 +100,7 @@ def admin_login():
 @login_required
 def admin_dashboard():
     if not current_user.is_admin:
-        flash("Unauthorized")
-        return redirect(url_for("admin_login"))
+        return redirect(url_for("home"))
 
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
@@ -114,15 +113,14 @@ def admin_dashboard():
         colleges=colleges
     )
 
-# ================= CREATE COLLEGE (FIXED) =================
+# ================= CREATE COLLEGE =================
 @app.route("/admin/create_college", methods=["POST"])
 @login_required
 def create_college():
     if not current_user.is_admin:
-        flash("Unauthorized")
-        return redirect(url_for("admin_login"))
+        return redirect(url_for("home"))
 
-    college_name = request.form.get("college_name")
+    college_name = request.form.get("name")   # 🔥 MATCH HTML
     email = request.form.get("email")
     password = request.form.get("password")
 
@@ -132,33 +130,22 @@ def create_college():
 
     conn = get_db_connection()
     cursor = conn.cursor()
-
     cursor.execute(
         "INSERT INTO colleges (college_name, email, password) VALUES (%s,%s,%s)",
         (college_name, email, password)
     )
-
     conn.commit()
     conn.close()
 
     flash("College created successfully ✅")
     return redirect(url_for("admin_dashboard"))
 
-# ================= ADMIN SETTINGS =================
-@app.route("/admin/settings")
-@login_required
-def admin_settings():
-    if not current_user.is_admin:
-        flash("Unauthorized")
-        return redirect(url_for("admin_login"))
-    return render_template("admin/settings.html")
-
 # ================= LOGOUT =================
 @app.route("/logout")
 @login_required
 def logout():
     logout_user()
-    return redirect(url_for("admin_login"))
+    return redirect(url_for("home"))
 
 # ================= LOCAL =================
 if __name__ == "__main__":
