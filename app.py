@@ -23,10 +23,12 @@ db_config = {
 def get_db_connection():
     return mysql.connector.connect(**db_config)
 
-# ================= LOGIN =================
+# ================= LOGIN MANAGER =================
 login_manager = LoginManager()
 login_manager.init_app(app)
-login_manager.login_view = "home"   # 🔥 VERY IMPORTANT
+
+# 🔥 VERY IMPORTANT (fixes direct admin redirect issue)
+login_manager.login_view = "home"
 
 # ================= USER MODEL =================
 class User(UserMixin):
@@ -44,7 +46,7 @@ class User(UserMixin):
 def load_user(user_id):
     try:
         role, db_id = user_id.split(":")
-    except:
+    except ValueError:
         return None
 
     if role != "SUPER_ADMIN":
@@ -52,23 +54,34 @@ def load_user(user_id):
 
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
-    cursor.execute("SELECT * FROM super_admin WHERE id=%s", (db_id,))
-    data = cursor.fetchone()
+    cursor.execute(
+        "SELECT * FROM super_admin WHERE id=%s",
+        (db_id,)
+    )
+    admin = cursor.fetchone()
     conn.close()
 
-    if not data:
+    if not admin:
         return None
 
-    return User(f"SUPER_ADMIN:{db_id}", "SUPER_ADMIN", data["email"])
+    return User(
+        f"SUPER_ADMIN:{admin['id']}",
+        "SUPER_ADMIN",
+        admin["email"]
+    )
 
 # ================= HOME (CARDS PAGE) =================
 @app.route("/")
 def home():
-    return render_template("index.html")  # 🔥 cards page
+    # 🔥 This MUST open first
+    return render_template("index.html")
 
 # ================= SUPER ADMIN LOGIN =================
 @app.route("/admin/login", methods=["GET", "POST"])
 def admin_login():
+    if current_user.is_authenticated:
+        return redirect(url_for("admin_dashboard"))
+
     if request.method == "POST":
         email = request.form.get("email")
         password = request.form.get("password")
@@ -91,7 +104,7 @@ def admin_login():
             login_user(user)
             return redirect(url_for("admin_dashboard"))
 
-        flash("Invalid Admin Credentials")
+        flash("Invalid Admin Credentials ❌")
 
     return render_template("admin/login.html")
 
@@ -112,7 +125,29 @@ def admin_dashboard():
         "admin/dashboard.html",
         colleges=colleges
     )
+# ================= COLLEGE LOGIN =================
+@app.route("/college/login", methods=["GET", "POST"])
+def college_login():
+    if request.method == "POST":
+        email = request.form.get("email")
+        password = request.form.get("password")
 
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute(
+            "SELECT * FROM colleges WHERE email=%s AND password=%s",
+            (email, password)
+        )
+        college = cursor.fetchone()
+        conn.close()
+
+        if college:
+            # future lo college dashboard redirect cheyochu
+            return "College Login Success ✅"
+
+        flash("Invalid College Credentials ❌")
+
+    return render_template("college/login.html")
 # ================= CREATE COLLEGE =================
 @app.route("/admin/create_college", methods=["POST"])
 @login_required
@@ -120,12 +155,13 @@ def create_college():
     if not current_user.is_admin:
         return redirect(url_for("home"))
 
-    college_name = request.form.get("name")   # 🔥 MATCH HTML
+    # 🔥 MUST match HTML input names
+    college_name = request.form.get("name")
     email = request.form.get("email")
     password = request.form.get("password")
 
     if not college_name or not email or not password:
-        flash("All fields required")
+        flash("All fields are required ❌")
         return redirect(url_for("admin_dashboard"))
 
     conn = get_db_connection()
@@ -147,6 +183,6 @@ def logout():
     logout_user()
     return redirect(url_for("home"))
 
-# ================= LOCAL =================
+# ================= RUN =================
 if __name__ == "__main__":
     app.run(debug=True)
